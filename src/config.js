@@ -1,4 +1,10 @@
-﻿const config = {
+const config = {
+  //指定name,type,value,date所在的列,value列下的字段必须为数值，date列下的字段必须为日期格式
+  name_col: "name",
+  type_col: "type",
+  value_col: "value",
+  date_col: "date",
+	
   // 数据源的编码方式。
   // 默认为UTF-8。
   // 如果是国内用户，且使用旧版Execl处理数据，保存的编码很可能是GBK的，如果出现乱码则将这里改成GBK。
@@ -12,7 +18,7 @@
   max_number: 20,
 
   // 控制是否显示顶部附加信息文字。
-  showMessage: true,
+  showMessage: false,
 
   // 时间自动排序。
   // !!!请确保打开此项时，使用的是标准日期格式！(即：YYYY-MM-DD HH:MM)
@@ -21,13 +27,13 @@
   // 开启auto_sort可以实现时间的自动补间。
   // Auto Sort by Time
   // Please ensure using standard datetime format (YYYY-MM-DD HH:MM) when this term is enabled!!!
-  auto_sort: false,
+  auto_sort: true,
 
   // 时间格式化
   timeFormat: "%Y-%m-%d",
 
   // 倒序，使得最短的条位于最上方
-  reverse: false,
+  reverse: true,
 
   // 类型根据什么字段区分？如果是name，则关闭类型显示
   divide_by: "type",
