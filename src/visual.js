@@ -25,10 +25,14 @@ $("#inputfile").change(function() {
 });
 
 function draw(data) {
+  var name_col = config.name_col;
+  var type_col = config.type_col;
+  var value_col = config.value_col;
+  var date_col = config.date_col;
   var date = [];
   data.forEach(element => {
-    if (date.indexOf(element["date"]) == -1) {
-      date.push(element["date"]);
+    if (date.indexOf(element[date_col]) == -1) {
+      date.push(element[date_col]);
     }
   });
   let rate = [];
@@ -41,15 +45,15 @@ function draw(data) {
   var use_semilogarithmic_coordinate = config.use_semilogarithmic_coordinate;
   var big_value = config.big_value;
   var divide_by = config.divide_by;
-  var divide_color_by = config.divide_color_by;
+  var divide_color_by = config.divide_color_by == "name" ? name_col : type_col;
   var name_list = [];
   var changeable_color = config.changeable_color;
   var divide_changeable_color_by_type = config.divide_changeable_color_by_type;
   data
-    .sort((a, b) => Number(b.value) - Number(a.value))
+    .sort((a, b) => Number(b[value_col]) - Number(a[value_col]))
     .forEach(e => {
-      if (name_list.indexOf(e.name) == -1) {
-        name_list.push(e.name);
+      if (name_list.indexOf(e[name_col]) == -1) {
+        name_list.push(e[name_col]);
       }
     });
   var baseTime = 3000;
@@ -62,14 +66,14 @@ function draw(data) {
         config.color_range[0],
         config.color_range[1]
       );
-      if (divide_changeable_color_by_type && d["type"] in config.color_ranges) {
+      if (divide_changeable_color_by_type && d[type_col] in config.color_ranges) {
         var colorRange = d3.interpolateCubehelix(
-          config.color_ranges[d["type"]][0],
-          config.color_ranges[d["type"]][1]
+          config.color_ranges[d[type_col]][0],
+          config.color_ranges[d[type_col]][1]
         );
       }
       var v =
-        Math.abs(rate[d.name] - rate["MIN_RATE"]) /
+        Math.abs(rate[d[name_col]] - rate["MIN_RATE"]) /
         (rate["MAX_RATE"] - rate["MIN_RATE"]);
       if (isNaN(v) || v == -1) {
         return colorRange(0.6);
@@ -146,8 +150,8 @@ function draw(data) {
   const innerWidth = width - margin.left - margin.right;
   const innerHeight = height - margin.top - margin.bottom - 32;
   //var dateLabel_y = height - margin.top - margin.bottom - 32;;
-  const xValue = d => Number(d.value);
-  const yValue = d => d.name;
+  const xValue = d => Number(d[value_col]);
+  const yValue = d => d[name_col];
 
   const g = svg
     .append("g")
@@ -227,39 +231,23 @@ function draw(data) {
     .attr("y", text_y);
 
   function dataSort() {
-    if (reverse) {
+
       currentData.sort(function(a, b) {
-        if (Number(a.value) == Number(b.value)) {
+        if (Number(a[value_col]) == Number(b[value_col])) {
           var r1 = 0;
           var r2 = 0;
-          for (let index = 0; index < a.name.length; index++) {
-            r1 = r1 + a.name.charCodeAt(index);
+          for (let index = 0; index < a[name_col].length; index++) {
+            r1 = r1 + a[name_col].charCodeAt(index);
           }
-          for (let index = 0; index < b.name.length; index++) {
-            r2 = r2 + b.name.charCodeAt(index);
+          for (let index = 0; index < b[name_col].length; index++) {
+            r2 = r2 + b[name_col].charCodeAt(index);
           }
           return r2 - r1;
         } else {
-          return Number(a.value) - Number(b.value);
+          return reverse ? Number(b[value_col]) - Number(a[value_col]) : Number(a[value_col]) - Number(b[value_col]);
         }
       });
-    } else {
-      currentData.sort(function(a, b) {
-        if (Number(a.value) == Number(b.value)) {
-          var r1 = 0;
-          var r2 = 0;
-          for (let index = 0; index < a.name.length; index++) {
-            r1 = r1 + a.name.charCodeAt(index);
-          }
-          for (let index = 0; index < b.name.length; index++) {
-            r2 = r2 + b.name.charCodeAt(index);
-          }
-          return r2 - r1;
-        } else {
-          return Number(b.value) - Number(a.value);
-        }
-      });
-    }
+    
   }
 
   function getCurrentData(date) {
@@ -268,13 +256,13 @@ function draw(data) {
     indexList = [];
 
     data.forEach(element => {
-      if (element["date"] == date && parseFloat(element["value"]) != 0) {
-        if (element.name.length > config.bar_name_max) {
+      if (element[date_col] == date && parseFloat(element[value_col]) != 0) {
+        if (element[name_col].length > config.bar_name_max) {
           tail = "...";
         } else {
           tail = "";
         }
-        element.name = element.name.slice(0, config.bar_name_max - 1) + tail;
+        element[name_col] = element[name_col].slice(0, config.bar_name_max - 1) + tail;
         currentData.push(element);
       }
     });
@@ -282,19 +270,19 @@ function draw(data) {
     rate["MAX_RATE"] = 0;
     rate["MIN_RATE"] = 1;
     currentData.forEach(e => {
-      _cName = e.name;
+      _cName = e[name_col];
       lastData.forEach(el => {
-        if (el.name == e.name) {
-          rate[e.name] = Number(Number(e.value) - Number(el.value));
+        if (el[name_col] == e[name_col]) {
+          rate[e[name_col]] = Number(Number(e[value_col]) - Number(el[value_col]));
         }
       });
-      if (rate[e.name] == undefined) {
-        rate[e.name] = rate["MIN_RATE"];
+      if (rate[e[name_col]] == undefined) {
+        rate[e[name_col]] = rate["MIN_RATE"];
       }
-      if (rate[e.name] > rate["MAX_RATE"]) {
-        rate["MAX_RATE"] = rate[e.name];
-      } else if (rate[e.name] < rate["MIN_RATE"]) {
-        rate["MIN_RATE"] = rate[e.name];
+      if (rate[e[name_col]] > rate["MAX_RATE"]) {
+        rate["MAX_RATE"] = rate[e[name_col]];
+      } else if (rate[e[name_col]] < rate["MIN_RATE"]) {
+        rate["MIN_RATE"] = rate[e[name_col]];
       }
     });
     currentData = currentData.slice(0, max_number);
@@ -379,7 +367,7 @@ function draw(data) {
           var self = this;
           var i = d3.interpolateDate(
             new Date(self.textContent),
-            new Date(d.date)
+            new Date(d[date_col])
           );
           // var prec = (new Date(d.date) + "").split(".");
           // var round = (prec.length > 1) ? Math.pow(10, prec[1].length) : 1;
@@ -409,24 +397,24 @@ function draw(data) {
     }
 
     yScale
-      .domain(currentData.map(d => d.name).reverse())
+      .domain(currentData.map(d => d[name_col]).reverse())
       .range([innerHeight, 0]);
 
     var bar = g.selectAll(".bar").data(currentData, function(d) {
-      return d.name;
+      return d[name_col];
     });
 
     if (showMessage) {
       // 榜首文字
       topLabel.data(currentData).text(function(d) {
-        if (lastname == d.name) {
+        if (lastname == d[name_col]) {
           counter.value = counter.value + step;
         } else {
           counter.value = 1;
         }
-        lastname = d.name;
-        if (d.name.length > 24) return d.name.slice(0, 23) + "...";
-        return d.name;
+        lastname = d[name_col];
+        if (d[name_col].length > 24) return d[name_col].slice(0, 23) + "...";
+        return d[name_col];
       });
       if (use_counter == true) {
         // 榜首持续时间更新
@@ -450,7 +438,7 @@ function draw(data) {
       } else if (use_type_info == true) {
         // 榜首type更新
         top_type.data(currentData).text(function(d) {
-          return d["type"];
+          return d[type_col];
         });
       }
     }
@@ -469,7 +457,7 @@ function draw(data) {
         if (enter_from_0) {
           return 0;
         } else {
-          return xScale(currentData[currentData.length - 1].value);
+          return xScale(currentData[currentData.length - 1][value_col]);
         }
       })
       .attr("fill-opacity", 0)
@@ -507,7 +495,7 @@ function draw(data) {
           if (long) {
             return "";
           }
-          return d.name;
+          return d[name_col];
         });
     }
 
@@ -515,7 +503,7 @@ function draw(data) {
       barEnter
         .append("defs")
         .append("pattern")
-        .attr("id", d => d.name)
+        .attr("id", d => d[name_col])
         .attr("width", "100%")
         .attr("height", "100%")
         .append("image")
@@ -523,7 +511,7 @@ function draw(data) {
         .attr("y", "0")
         .attr("width", "40")
         .attr("height", "40")
-        .attr("href", d => config.imgs[d.name]);
+        .attr("href", d => config.imgs[d[name_col]]);
 
       barEnter
         .append("circle")
@@ -533,7 +521,7 @@ function draw(data) {
           "fill",
           d =>
             "url(#" +
-            encodeURIComponent(d.name)
+            encodeURIComponent(d[name_col])
               .replace("'", "%27")
               .replace("(", "%28")
               .replace(")", "%29") +
@@ -559,7 +547,7 @@ function draw(data) {
         if (enter_from_0) {
           return 0;
         } else {
-          return xScale(currentData[currentData.length - 1].value);
+          return xScale(currentData[currentData.length - 1][value_col]);
         }
       })
       .attr("stroke", d => getColor(d))
@@ -574,9 +562,9 @@ function draw(data) {
       .duration(2490 * interval_time)
       .text(function(d) {
         if (use_type_info) {
-          return d[divide_by] + "-" + d.name;
+          return d[type_col] + "-" + d[name_col];
         }
-        return d.name;
+        return d[name_col];
       })
       .attr("x", d => {
         if (long) return 10;
@@ -604,15 +592,15 @@ function draw(data) {
     if (long) {
       barInfo.tween("text", function(d) {
         var self = this;
-        self.textContent = d.value;
-        var i = d3.interpolate(self.textContent, Number(d.value)),
-          prec = (Number(d.value) + "").split("."),
+        self.textContent = d[value_col];
+        var i = d3.interpolate(self.textContent, Number(d[value_col])),
+          prec = (Number(d[value_col]) + "").split("."),
           round = prec.length > 1 ? Math.pow(10, prec[1].length) : 1;
         return function(t) {
           self.textContent =
-            d[divide_by] +
+            d[type_col] +
             "-" +
-            d.name +
+            d[name_col] +
             "  数值:" +
             d3.format(format)(Math.round(i(t) * round) / round);
         };
@@ -628,7 +616,7 @@ function draw(data) {
           if (enter_from_0) {
             return 0;
           } else {
-            return xScale(currentData[currentData.length - 1].value);
+            return xScale(currentData[currentData.length - 1][value_col]);
           }
         })
         .attr("y", 50)
@@ -639,9 +627,9 @@ function draw(data) {
         .tween("text", function(d) {
           var self = this;
           // 初始值为d.value的0.9倍
-          self.textContent = d.value * 0.9;
-          var i = d3.interpolate(self.textContent, Number(d.value)),
-            prec = (Number(d.value) + "").split("."),
+          self.textContent = d[value_col] * 0.9;
+          var i = d3.interpolate(self.textContent, Number(d[value_col])),
+            prec = (Number(d[value_col]) + "").split("."),
             round = prec.length > 1 ? Math.pow(10, prec[1].length) : 1;
           // d.value = self.textContent
           return function(t) {
@@ -706,9 +694,9 @@ function draw(data) {
       .select(".barInfo")
       .text(function(d) {
         if (use_type_info) {
-          return d[divide_by] + "-" + d.name;
+          return d[type_col] + "-" + d[name_col];
         }
-        return d.name;
+        return d[name_col];
       })
       .attr("x", d => {
         if (long) return 10;
@@ -731,19 +719,19 @@ function draw(data) {
     if (long) {
       barInfo.tween("text", function(d) {
         var self = this;
-        var str = d[divide_by] + "-" + d.name + "  数值:";
+        var str = d[type_col] + "-" + d[name_col] + "  数值:";
 
         var i = d3.interpolate(
             self.textContent.slice(str.length, 99),
-            Number(d.value)
+            Number(d)[value_col]
           ),
-          prec = (Number(d.value) + "").split("."),
+          prec = (Number(d[value_col]) + "").split("."),
           round = prec.length > 1 ? Math.pow(10, prec[1].length) : 1;
         return function(t) {
           self.textContent =
-            d[divide_by] +
+            d[type_col] +
             "-" +
-            d.name +
+            d[name_col] +
             "  数值:" +
             d3.format(format)(Math.round(i(t) * round) / round);
         };
@@ -757,20 +745,20 @@ function draw(data) {
 
           // if postfix is blank, do not slice.
           if (config.postfix == "") {
-            var i = d3.interpolate(self.textContent, Number(d.value));
+            var i = d3.interpolate(self.textContent, Number(d[value_col]));
           } else {
             var i = d3.interpolate(
               self.textContent.slice(0, -config.postfix.length),
-              Number(d.value)
+              Number(d[value_col])
             );
           }
 
           var i = d3.interpolate(
             deformat(self.textContent, config.postfix),
-            Number(d.value)
+            Number(d[value_col])
           );
 
-          var prec = (Number(d.value) + "").split("."),
+          var prec = (Number(d[value_col]) + "").split("."),
             round = prec.length > 1 ? Math.pow(10, prec[1].length) : 1;
           // d.value = self.textContent
           return function(t) {
@@ -784,8 +772,8 @@ function draw(data) {
         .attr("x", d => xScale(xValue(d)) + 10);
     }
     avg =
-      (Number(currentData[0]["value"]) +
-        Number(currentData[currentData.length - 1]["value"])) /
+      (Number(currentData[0][value_col]) +
+        Number(currentData[currentData.length - 1][value_col])) /
       2;
 
     var barExit = bar
@@ -798,7 +786,7 @@ function draw(data) {
         if (always_up) {
           return "translate(0," + "-100" + ")";
         }
-        if (Number(d.value) > avg && allow_up) {
+        if (Number(d[value_col]) > avg && allow_up) {
           return "translate(0," + "-100" + ")";
         }
         return "translate(0," + "1000" + ")";
@@ -810,7 +798,7 @@ function draw(data) {
       .attr("fill-opacity", 0)
       .attr("width", () => {
         if (always_up) return xScale(0);
-        return xScale(currentData[currentData.length - 1]["value"]);
+        return xScale(currentData[currentData.length - 1][value_col]);
       });
     if (!long) {
       barExit
@@ -818,7 +806,7 @@ function draw(data) {
         .attr("fill-opacity", 0)
         .attr("x", () => {
           if (always_up) return xScale(0);
-          return xScale(currentData[currentData.length - 1]["value"]);
+          return xScale(currentData[currentData.length - 1][value_col]);
         });
     }
     barExit
@@ -830,7 +818,7 @@ function draw(data) {
       .attr("x", () => {
         if (long) return 10;
         if (always_up) return xScale(0);
-        return xScale(currentData[currentData.length - 1]["value"]);
+        return xScale(currentData[currentData.length - 1][value_col]);
       });
     barExit.select(".label").attr("fill-opacity", 0);
     if (config.use_img) {
@@ -840,12 +828,12 @@ function draw(data) {
 
   function change() {
     yScale
-      .domain(currentData.map(d => d.name).reverse())
+      .domain(currentData.map(d => d[name_col]).reverse())
       .range([innerHeight, 0]);
     if (animation == "linear") {
       g.selectAll(".bar")
         .data(currentData, function(d) {
-          return d.name;
+          return d[name_col];
         })
         .transition("1")
         .ease(d3.easeLinear)
@@ -856,7 +844,7 @@ function draw(data) {
     } else {
       g.selectAll(".bar")
         .data(currentData, function(d) {
-          return d.name;
+          return d[name_col];
         })
         .transition("1")
         .duration(baseTime * update_rate * interval_time)
